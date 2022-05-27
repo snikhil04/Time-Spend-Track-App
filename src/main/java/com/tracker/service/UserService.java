@@ -7,10 +7,14 @@ import java.util.Optional;
 
 import javax.validation.Valid;
 
+import com.tracker.dao.UserActivityRepo;
+import com.tracker.entities.*;
 import com.tracker.exceptionhandler.ValidationException;
 import com.tracker.request.UserRegisterRequestDto;
 import com.tracker.response.PurchaseHistoryUserResponse;
+import com.tracker.response.UpdatedUserResponse;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.RequestBody;
 
@@ -20,11 +24,6 @@ import com.tracker.dao.UserRepo;
 import com.tracker.request.UserUpdatingDetailsRequestDto;
 import com.tracker.response.ProductListUserResponse;
 import com.tracker.dto.ProductPurchaseUserRequestDto;
-import com.tracker.entities.Product;
-import com.tracker.entities.PurchaseHistory;
-import com.tracker.entities.Role;
-import com.tracker.entities.User;
-import com.tracker.entities.UserWallet;
 
 @Service
 public class UserService {
@@ -38,27 +37,43 @@ public class UserService {
     @Autowired
     private UserPurchaseHistoryMongoRepo purchasehistoryrepo;
 
+    @Autowired
+    private BCryptPasswordEncoder passwordEncoder;
+
+    @Autowired
+    private UserActivityRepo userActivityRepo;
+
     //REGISTERING A USER
     public User RegisterUser(@Valid @RequestBody UserRegisterRequestDto userdto) {
         User user = new User();
         if (userdto != null) {
             user.setName(userdto.getName());
             user.setEmail(userdto.getEmail());
-            user.setPassword(userdto.getPassword());
-            user.setRole(new Role("ROLE_USER"));
+            user.setPassword(passwordEncoder.encode(userdto.getPassword()));
+            user.setRole(new Role("END_USER"));
             user.setUserWallet(new UserWallet(this.userrepo.getDefaultWalletAmount()));
             user.setActive(true);
             this.userrepo.save(user);
+
+            //SETTING THE ACTIVITY OF THE USER
+
+            UserActivity activity = new UserActivity();
+            activity.setUserId(user.getId());
+            activity.setUserEmail(user.getEmail());
+            activity.setLoginTime(LocalDateTime.now());
+            activity.setActivity("REGISTER");
+            this.userActivityRepo.save(activity);
             return user;
         } else {
-            return user = null;
+            return user;
         }
     }
 
     //UPADTING USER DETAILS
-    public UserUpdatingDetailsRequestDto updateUser(UserUpdatingDetailsRequestDto userdto, User user) {
-        UserUpdatingDetailsRequestDto response = null;
+    public UpdatedUserResponse updateUser(UserUpdatingDetailsRequestDto userdto, User user) {
+
         User validateduser = user;
+        UpdatedUserResponse response = new UpdatedUserResponse();
 
         if (userdto != null) {
             validateduser.setId(user.getId());
@@ -77,15 +92,16 @@ public class UserService {
             }
 
             if (userdto.getPassword() != null) {
-                validateduser.setPassword(userdto.getPassword());
+                validateduser.setPassword(passwordEncoder.encode(userdto.getPassword()));
             } else {
                 validateduser.setPassword(user.getPassword());
             }
             validateduser.setRole(user.getRole());
             validateduser.setActive(user.isActive());
             validateduser.getUserWallet().setCurrency(user.getUserWallet().getCurrency());
-            response = new UserUpdatingDetailsRequestDto(validateduser.getName(), validateduser.getEmail(),
-                    validateduser.getPassword());
+
+            response.setName(validateduser.getName());
+            response.setEmail(validateduser.getEmail());
             this.userrepo.save(user);
         }
 
@@ -154,10 +170,10 @@ public class UserService {
                 this.productRepo.save(product.get());
                 this.userrepo.save(user);
             } else {
-                throw new ValidationException(404,"Request to your admin to increase wallet limit");
+                throw new ValidationException(404, "Request to your admin to increase wallet limit" + "Click here and enter your amount " + "redirect:/user/request/");
             }
         } else {
-            throw new ValidationException(404,("Sorry We have only [" + product.get().getQuantity() + "] Quantity "));
+            throw new ValidationException(404, ("Sorry We have only [" + product.get().getQuantity() + "] Quantity "));
         }
 
         return response;
@@ -179,6 +195,15 @@ public class UserService {
             purchaseHistoryUserResponseList.add(purchaseHistoryUserResponse);
         }
         return purchaseHistoryUserResponseList;
+    }
+
+    //REQUESTING ADMIN TO INCREASE WALLET LIMIT
+    public UserRequests RequestAdminForWallet(User user, long amount){
+        UserRequests requests = new UserRequests();
+        requests.setUserEmail(user.getEmail());
+        requests.setRequestedAmount(amount);
+        requests.setUserCurrentBalance(user.getUserWallet().getCurrency());
+        return requests;
     }
 
 }

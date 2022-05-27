@@ -6,10 +6,12 @@ import java.util.Optional;
 import com.tracker.dao.UserRepo;
 import com.tracker.entities.PurchaseHistory;
 import com.tracker.entities.User;
+import com.tracker.exceptionhandler.ValidationException;
 import com.tracker.response.AllUsersPurchaseHistoryResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -36,18 +38,20 @@ public class ProductController {
     private UserRepo userrepo;
 
     // GETTING THE LIST OF ALL PRODUCTS
+
     @GetMapping("/get")
     @Operation(summary = "Getting All Of Products")
     public ResponseEntity<List<Product>> ListOfProducts() {
         List<Product> products = this.adminService.getAllProducts();
         if (products.size() == 0) {
-            return ResponseEntity.noContent().build();
+            throw new ValidationException(404,"Product Not Found");
         } else {
             return ResponseEntity.ok(products);
         }
     }
 
     // GETTING PRODUCTS BASED ON PRODUCT CATEGORY
+
     @Operation(summary = "Getting Products Based on Category")
     @GetMapping("/get/{category}")
     public ResponseEntity<List<Product>> ProductsByCategory(@PathVariable("category") String category) {
@@ -56,11 +60,12 @@ public class ProductController {
             return ResponseEntity.ok(products);
 
         } else {
-            return ResponseEntity.notFound().build();
+            throw new ValidationException(404,"Product Not Found");
         }
     }
 
     // ADDING PRODUCT IN DATABASE
+
     @PostMapping("/add/{category}")
     @Operation(summary = "Adding Product")
     public ResponseEntity<Product> AddProduct(@RequestBody AddProductRequestDto addProductRequestDto,
@@ -74,6 +79,7 @@ public class ProductController {
     }
 
     // UPDATING PRODUCT IN DATABASE
+
     @PutMapping("/update/{id}")
     @Operation(summary = "Updating Product")
     public ResponseEntity<Product> UpdateProduct(@RequestBody AddProductRequestDto productdto,
@@ -82,11 +88,12 @@ public class ProductController {
         if (p!=null) {
             return ResponseEntity.ok(p);
         } else {
-            return ResponseEntity.notFound().build();
+            throw new ValidationException(404,"Product Not Found");
         }
     }
 
     // DELETING A PARTICULAR PRODUCT
+
     @DeleteMapping("/delete/{id}")
     @Operation(summary = "Deleting Product")
     public ResponseEntity<Optional<Product>> deleteProduct(@PathVariable("id") String id) {
@@ -95,37 +102,8 @@ public class ProductController {
         if (product != null) {
             return ResponseEntity.ok(product);
         } else {
-            return ResponseEntity.notFound().build();
+            throw new ValidationException(404,"Product Not Found");
         }
     }
 
-    // GETTING ALL USER'S PURCHASE HISTORY
-    @GetMapping("/purchasehistory")
-    @Operation(summary = "Getting All User's Purchase History")
-    public ResponseEntity<List<AllUsersPurchaseHistoryResponse>> UserPurchaseHistory() {
-
-        List<AllUsersPurchaseHistoryResponse> purchaseHistoryList = this.adminService.UsersPurchaseHistory();
-        if (!(purchaseHistoryList.isEmpty())) {
-            return ResponseEntity.ok(purchaseHistoryList);
-        } else {
-            return ResponseEntity.noContent().build();
-        }
-    }
-
-    //FETCHING A PARTICULAR USER HISTORY
-    @GetMapping("/purchasehistory/{email}")
-    @Operation(summary = "Getting A  Particular User Purchase History")
-    public ResponseEntity<List<PurchaseHistory>> UserPurchaseHistory(@PathVariable("email") String email) {
-        User user = this.userrepo.findByEmail(email);
-        if (user != null) {
-            List<PurchaseHistory> purchaseHistoryList = this.adminService.UserPurchaseHistory(user);
-            if (!(purchaseHistoryList.isEmpty())) {
-                return ResponseEntity.ok(purchaseHistoryList);
-            } else {
-                return ResponseEntity.noContent().build();
-            }
-        } else {
-            return ResponseEntity.notFound().build();
-        }
-    }
 }

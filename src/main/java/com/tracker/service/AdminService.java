@@ -9,6 +9,7 @@ import com.tracker.entities.PurchaseHistory;
 import com.tracker.response.AllUsersPurchaseHistoryResponse;
 import com.tracker.response.MostSpendUsersResponse;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -29,6 +30,9 @@ public class AdminService {
 
     @Autowired
     private UserRepo userrepo;
+
+    @Autowired
+    private BCryptPasswordEncoder passwordEncoder;
 
     @Autowired
     private UserPurchaseHistoryMongoRepo userpurchasehistorymongorepo;
@@ -154,9 +158,10 @@ public class AdminService {
                 user.setEmail(user.getEmail());
             }
             if (userdto.getPassword() != null) {
-                user.setPassword(userdto.getPassword());
+                user.setPassword(passwordEncoder.encode(userdto.getPassword()));
             } else {
                 user.setPassword(user.getPassword());
+                System.out.println(user.getPassword());
             }
             if (userdto.getRole() != null) {
                 user.getRole().setUserRole(userdto.getRole());

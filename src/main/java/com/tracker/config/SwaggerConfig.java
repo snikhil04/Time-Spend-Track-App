@@ -27,9 +27,11 @@ public class SwaggerConfig {
     private ApiKey apiKey() {
         return new ApiKey(SwaggerConstant.JWT.getValue(), SwaggerConstant.X_AUTHORIZATION.getValue(), SwaggerConstant.HEADER.getValue());
     }
+
     private SecurityContext securityContext() {
         return SecurityContext.builder().securityReferences(defaultAuth()).build();
     }
+
     private List<SecurityReference> defaultAuth() {
         AuthorizationScope authorizationScope = new AuthorizationScope(SwaggerConstant.GLOBAL.getValue(), SwaggerConstant.ACCESS_EVERYTHING.getValue());
         AuthorizationScope[] authorizationScopes = new AuthorizationScope[1];
@@ -59,16 +61,4 @@ public class SwaggerConfig {
                 .build();
     }
 
-
-//    @Bean
-//    public Docket api() {
-//        return new Docket(DocumentationType.SWAGGER_2)
-//                .groupName("FLEX83")
-//                .select()
-//                .apis(RequestHandlerSelectors.basePackage("com.tracker"))
-//                .paths(PathSelectors.ant("/**"))
-//                .build()
-//                .apiInfo(apiInfo());
-//
-//    }
 }

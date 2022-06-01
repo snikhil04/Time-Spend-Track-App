@@ -1,26 +1,32 @@
 package com.tracker.service;
 
+import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import javax.validation.Valid;
 
-import com.tracker.dao.UserPurchaseHistoryMongoRepo;
-import com.tracker.entities.PurchaseHistory;
+import com.tracker.dao.*;
+import com.tracker.dto.UserWalletDtoJson;
+import com.tracker.entities.*;
+import com.tracker.exceptionhandler.ValidationException;
+import com.tracker.exceptionhandler.generic.ResponseDTO;
+import com.tracker.exceptionhandler.generic.ValidationErrorResponse;
 import com.tracker.response.AllUsersPurchaseHistoryResponse;
+import com.tracker.response.ApiResponseDTO;
 import com.tracker.response.MostSpendUsersResponse;
+import com.tracker.response.Response;
+import com.tracker.response.util.ResponseUtil;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 
-import com.tracker.dao.ProductRepo;
-import com.tracker.dao.UserRepo;
 import com.tracker.request.AddProductRequestDto;
 import com.tracker.request.AdminUpdatingUserRequestDto;
-import com.tracker.entities.Product;
-import com.tracker.entities.ProductCategory;
-import com.tracker.entities.User;
 
 @Service
 public class AdminService {
@@ -37,42 +43,63 @@ public class AdminService {
     @Autowired
     private UserPurchaseHistoryMongoRepo userpurchasehistorymongorepo;
 
+    @Autowired
+    private UserActivityRepo userActivityRepo;
+
+    @Autowired
+    UserWalletRequestsRepo userWalletRequestsRepo;
+
+    //ADMIN LOGOUT
+    public String AdminLogout() {
+        User user = this.userrepo.findByEmail(SecurityContextHolder.getContext().getAuthentication().getName());
+        UserActivity activity = new UserActivity();
+        activity.setUserId(user.getId());
+        activity.setUserEmail(user.getEmail());
+        activity.setLoginTime(LocalDateTime.now());
+        activity.setActivity("LOGOUT");
+        this.userActivityRepo.save(activity);
+        return "Logged Out";
+    }
+
     // GETTING ALL PRODUCTS
     public List<Product> getAllProducts() {
         List<Product> products = this.productRepo.findAll();
-        return products;
+        if (products.size() > 0) {
+            return products;
+        } else {
+            throw new ValidationException(400, "Products Not Found");
+        }
     }
 
     // GETTING PRODUCTS BASED ON PRODUCT CATEGORY
     public List<Product> getProductsByCategory(String category) {
         List<String> productId = this.productRepo.getProductIdByCategory(category);
-        List<Product> productList = new ArrayList<>();
-        for (String id : productId) {
-            Product p = this.productRepo.getProductByProductCategoryId(id);
-            productList.add(p);
+        if (productId.size() > 0) {
+            List<Product> productList = new ArrayList<>();
+            for (String id : productId) {
+                Product p = this.productRepo.getProductByProductCategoryId(id);
+                productList.add(p);
+            }
+            return productList;
+        } else {
+            throw new ValidationException(400, "No Products Are Available For This Product Category");
         }
-        return productList;
     }
 
     // ADDING PRODUCT IN DATABASE
-    public Product AddProduct(@Valid @RequestBody AddProductRequestDto addProductRequestDto, String category) {
+    public Product AddProduct(@Valid AddProductRequestDto addProductRequestDto) {
         Product product = new Product();
 
         if (addProductRequestDto != null) {
             product.setName(addProductRequestDto.getName());
             product.setPrice(addProductRequestDto.getPrice());
             product.setDescription(addProductRequestDto.getDescription());
-            if (addProductRequestDto.getCategory() != null) {
-                product.setProductCategory(new ProductCategory(addProductRequestDto.getCategory()));
-            } else {
-                addProductRequestDto.setCategory(category);
-                product.setProductCategory(new ProductCategory(addProductRequestDto.getCategory()));
-            }
+            product.setProductCategory(new ProductCategory(addProductRequestDto.getCategory()));
             product.setQuantity(addProductRequestDto.getQuantity());
             this.productRepo.save(product);
             return product;
         } else {
-            return product;
+            throw new ValidationException(400, "Bad Request");
         }
     }
 
@@ -115,7 +142,7 @@ public class AdminService {
             this.productRepo.save(p.get());
             return p.get();
         } else {
-            return p.get();
+            throw new ValidationException(400, "Product Not Found");
         }
     }
 
@@ -126,79 +153,95 @@ public class AdminService {
             this.productRepo.delete(product.get());
             return product;
         } else {
-            return product;
+            throw new ValidationException(404, "Product Not Found");
         }
     }
 
     // GETTING THE LIST OF ALL USERS
     public List<User> getAllUsers() {
         List<User> usersList = this.userrepo.findAll();
-        return usersList;
+        List<User> list = new ArrayList<>();
+        if (usersList.size() > 0) {
+            usersList.forEach(user -> {
+                if (user.getRole().getUserRole().equals("END_USER")) {
+                    list.add(user);
+                }
+            });
+            return list;
+        } else {
+            throw new ValidationException(404, "Users Not Found");
+        }
     }
 
     // GETTING A PARTICULAR USER
     public User getParticularUser(String email) {
         User user = this.userrepo.findByEmail(email);
-        return user;
+        if (user != null) {
+            return user;
+        } else {
+            throw new ValidationException(404, "User Not Found");
+        }
     }
 
     // UPDATING A PARTICULAR USER
     public User UpdateUser(String email, AdminUpdatingUserRequestDto userdto) {
         User user = this.userrepo.findByEmail(email);
-        if (userdto != null) {
-            user.setId(user.getId());
-            if (userdto.getName() != null) {
-                user.setName(userdto.getName());
-            } else {
-                user.setName(user.getName());
-            }
-            if (userdto.getEmail() != null) {
-                user.setEmail(userdto.getEmail());
-            } else {
-                user.setEmail(user.getEmail());
-            }
-            if (userdto.getPassword() != null) {
-                user.setPassword(passwordEncoder.encode(userdto.getPassword()));
-            } else {
-                user.setPassword(user.getPassword());
-                System.out.println(user.getPassword());
-            }
-            if (userdto.getRole() != null) {
-                user.getRole().setUserRole(userdto.getRole());
-            } else {
-                user.getRole().setUserRole(user.getRole().getUserRole());
-            }
 
-            user.setActive(userdto.isActive());
-//            if (userdto.isActive() == true) {
-//
-//            } else if (userdto.isActive() == false) {
-//                user.setActive(false);
-//            } else {
-//                user.setActive(user.isActive());
-//            }
+        if (user != null) {
+            if (userdto != null) {
+                user.setId(user.getId());
+                if (userdto.getName() != null) {
+                    user.setName(userdto.getName());
+                } else {
+                    user.setName(user.getName());
+                }
+                if (userdto.getEmail() != null) {
+                    user.setEmail(userdto.getEmail());
+                } else {
+                    user.setEmail(user.getEmail());
+                }
+                if (userdto.getPassword() != null) {
+                    user.setPassword(passwordEncoder.encode(userdto.getPassword()));
+                } else {
+                    user.setPassword(user.getPassword());
+                    System.out.println(user.getPassword());
+                }
+                if (userdto.getRole() != null) {
+                    user.getRole().setUserRole(userdto.getRole());
+                } else {
+                    user.getRole().setUserRole(user.getRole().getUserRole());
+                }
 
-            if (userdto.getCurrency() > 0) {
-                user.getUserWallet().setCurrency(userdto.getCurrency());
+                user.setActive(userdto.isActive());
+
+                if (userdto.getCurrency() > 0) {
+                    user.getUserWallet().setCurrency(userdto.getCurrency());
+                } else {
+                    user.getUserWallet().setCurrency(user.getUserWallet().getCurrency());
+                }
+                this.userrepo.save(user);
+                return user;
             } else {
-                user.getUserWallet().setCurrency(user.getUserWallet().getCurrency());
+                throw new ValidationException(404, "Bad Request");
             }
-            this.userrepo.save(user);
-            return user;
         } else {
-            return user;
+            throw new ValidationException(404, "User Not Found");
         }
     }
 
     // UPDATING A PARTICULAR USER WALLET
-    public User UpdateUserWallet(String email, long currency) {
+    public String UpdateUserWallet(String email, UserWalletDtoJson userWalletDtoJson) {
         User user = this.userrepo.findByEmail(email);
         if (user != null) {
-            user.getUserWallet().setCurrency(currency);
-            this.userrepo.save(user);
-            return user;
+            if (userWalletDtoJson.getCurrency() <= 0) {
+                throw new ValidationException(400, "Wallet Can't Be Updated At 0 Rs");
+            } else {
+                user.getUserWallet().setCurrency(userWalletDtoJson.getCurrency());
+                this.userrepo.save(user);
+                return "User Wallet Updated =>" + userWalletDtoJson.getCurrency();
+            }
         } else {
-            return user;
+            throw new ValidationException(404, "User Not Found");
         }
     }
 
@@ -210,18 +253,30 @@ public class AdminService {
             this.userrepo.save(user);
             return user;
         } else {
-            return user;
+            throw new ValidationException(404, "User Not Found");
         }
     }
 
     // DELETING A PARTICULAR USER
     public User DeleteUser(String email) {
         User user = this.userrepo.findByEmail(email);
+        List<PurchaseHistory> purchaseHistoryList = this.userpurchasehistorymongorepo.findByUserId(user.getId());
+        UserRequests request = this.userWalletRequestsRepo.getRequestIdByUserEmail(email);
         if (user != null) {
+
+            //DELETING USER PURCHASE HISTORY IF EXISTS
+            if (!(purchaseHistoryList.isEmpty())){
+                this.userpurchasehistorymongorepo.deleteAll(purchaseHistoryList);
+            }
+
+            //DELETING WALLLET REQUEST IF EXISTS
+            if (request!=null){
+                this.userWalletRequestsRepo.delete(request);
+            }
             this.userrepo.delete(user);
             return user;
         } else {
-            return user;
+            throw new ValidationException(404, "User Not Found");
         }
     }
 
@@ -250,8 +305,14 @@ public class AdminService {
     //MOST PURCHASED PRODUCT HISTORY
     public List<MostSpendUsersResponse> MostPurchasedProduct() {
 
+        //IT CONTAINS ALL ID'S OF TOP SPEND USERS
         List<MostSpendUsersResponse> userIdLIst = this.userpurchasehistorymongorepo.findMostSpendUser();
+
+        //IT CONTAINS ALL THE INFORMATION OF TOP SPEND USERS
         List<MostSpendUsersResponse> spendUsersResponseList = new ArrayList<>();
+
+        // IT IS FILTERED LIST OF TOP SPEND USER [TOP TO BOTTOM {5000,4000,3000,2000} LIKE THIS]
+        List<MostSpendUsersResponse> topSpendUsersList = new ArrayList<>();
 
         for (MostSpendUsersResponse u : userIdLIst) {
             User user = this.userrepo.findUserByUserId(u.getId());
@@ -262,11 +323,59 @@ public class AdminService {
             response.setUserEmail(user.getEmail());
             spendUsersResponseList.add(response);
         }
-        return spendUsersResponseList;
+
+        //IT FILTERS THE TOP SPEND USERS FROM [TOP TO BOTTOM {5000,4000,3000,2000} LIKE THIS]
+        topSpendUsersList = spendUsersResponseList.stream().sorted(Comparator.comparingLong(MostSpendUsersResponse::getSpendmoney).reversed()).collect(Collectors.toList());
+
+        //HERE WE ARE ASSIGNNG THE VALUE OF FILTERED RESULT TO [TOPSPENDUSERSLIST => LIST]
+        spendUsersResponseList = topSpendUsersList;
+
+        if (spendUsersResponseList.size() > 0) {
+            return spendUsersResponseList;
+        } else {
+            throw new ValidationException(404, "Top Spend Users List Is Empty");
+        }
+
     }
 
-    public List<PurchaseHistory> UserPurchaseHistory(User user) {
-        List<PurchaseHistory> purchaseHistoryList = this.userpurchasehistorymongorepo.findByUserId(user.getId());
-        return purchaseHistoryList;
+    //GETTING A PARTICULAR USER PURCHASE HISTORY
+    public List<PurchaseHistory> UserPurchaseHistory(String email) {
+        User user = this.userrepo.findByEmail(email);
+        if (user != null) {
+            List<PurchaseHistory> purchaseHistoryList = this.userpurchasehistorymongorepo.findByUserId(user.getId());
+            if (purchaseHistoryList.size() > 0) {
+                return purchaseHistoryList;
+            } else {
+                throw new ValidationException(404, "User Has Not Purchased Any Product");
+            }
+        } else {
+            throw new ValidationException(404, "User Not Found");
+        }
+    }
+
+    //RECEIVING ALL THE WALLET REQUESTS FROM USERS
+    public List<UserRequests> WalletRequests() {
+        List<UserRequests> userRequestsList = this.userWalletRequestsRepo.findAll();
+        if (userRequestsList.size() > 0) {
+            return userRequestsList;
+        } else {
+            throw new ValidationException(404, "No More Requests Here");
+        }
+    }
+
+    //UPDATING USER WALLET AS PER USER REQUEST
+    public String UpdateUserWalletOnRequest(String email, UserWalletDtoJson userWalletDtoJson) {
+        UserRequests request = this.userWalletRequestsRepo.getRequestIdByUserEmail(email);
+        if (request != null) {
+            if (userWalletDtoJson.getCurrency() == request.getRequestedAmount()) {
+                this.userWalletRequestsRepo.delete(request);
+                return UpdateUserWallet(email, userWalletDtoJson);
+            } else {
+                throw new ValidationException(400, "Only Requested Amount=> {" + request.getRequestedAmount() + "} is Accepted");
+            }
+        } else {
+            throw new ValidationException(400, "No Request Found For This User");
+        }
     }
 }
+

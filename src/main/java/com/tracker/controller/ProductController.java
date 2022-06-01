@@ -12,14 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import com.tracker.request.AddProductRequestDto;
 import com.tracker.entities.Product;
@@ -34,76 +27,38 @@ public class ProductController {
     @Autowired
     private AdminService adminService;
 
-    @Autowired
-    private UserRepo userrepo;
-
     // GETTING THE LIST OF ALL PRODUCTS
-
     @GetMapping("/get")
     @Operation(summary = "Getting All Of Products")
-    public ResponseEntity<List<Product>> ListOfProducts() {
-        List<Product> products = this.adminService.getAllProducts();
-        if (products.size() == 0) {
-            throw new ValidationException(404,"Product Not Found");
-        } else {
-            return ResponseEntity.ok(products);
-        }
+    public List<Product> ListOfProducts() {
+        return this.adminService.getAllProducts();
     }
 
     // GETTING PRODUCTS BASED ON PRODUCT CATEGORY
-
     @Operation(summary = "Getting Products Based on Category")
     @GetMapping("/get/{category}")
-    public ResponseEntity<List<Product>> ProductsByCategory(@PathVariable("category") String category) {
-        List<Product> products = this.adminService.getProductsByCategory(category);
-        if (products.size()>0) {
-            return ResponseEntity.ok(products);
-
-        } else {
-            throw new ValidationException(404,"Product Not Found");
-        }
+    public List<Product> ProductsByCategory(@PathVariable("category") String category) {
+        return this.adminService.getProductsByCategory(category);
     }
 
     // ADDING PRODUCT IN DATABASE
-
-    @PostMapping("/add/{category}")
+    @PostMapping("/add")
     @Operation(summary = "Adding Product")
-    public ResponseEntity<Product> AddProduct(@RequestBody AddProductRequestDto addProductRequestDto,
-                                              @PathVariable("category") String category) {
-        Product p = adminService.AddProduct(addProductRequestDto, category);
-        if (p != null) {
-            return ResponseEntity.status(HttpStatus.CREATED).body(p);
-        } else {
-            return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).body(p);
-        }
+    public Product AddProduct(@RequestBody AddProductRequestDto addProductRequestDto) {
+        return adminService.AddProduct(addProductRequestDto);
     }
 
-    // UPDATING PRODUCT IN DATABASE
-
-    @PutMapping("/update/{id}")
+    // UPDATING PRODUCT
+    @PatchMapping("/update/{id}")
     @Operation(summary = "Updating Product")
-    public ResponseEntity<Product> UpdateProduct(@RequestBody AddProductRequestDto productdto,
-                                                           @PathVariable("id") String id) {
-        Product p = this.adminService.UpdateProduct(productdto, id);
-        if (p!=null) {
-            return ResponseEntity.ok(p);
-        } else {
-            throw new ValidationException(404,"Product Not Found");
-        }
+    public Product UpdateProduct(@RequestBody AddProductRequestDto productdto,@PathVariable("id") String id) {
+        return this.adminService.UpdateProduct(productdto, id);
     }
 
     // DELETING A PARTICULAR PRODUCT
-
     @DeleteMapping("/delete/{id}")
     @Operation(summary = "Deleting Product")
-    public ResponseEntity<Optional<Product>> deleteProduct(@PathVariable("id") String id) {
-
-        Optional<Product> product = this.adminService.DeleteProduct(id);
-        if (product != null) {
-            return ResponseEntity.ok(product);
-        } else {
-            throw new ValidationException(404,"Product Not Found");
-        }
+    public Optional<Product> deleteProduct(@PathVariable("id") String id) {
+        return this.adminService.DeleteProduct(id);
     }
-
 }

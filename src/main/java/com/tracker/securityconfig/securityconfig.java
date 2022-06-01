@@ -20,7 +20,6 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 @Configuration
 @EnableWebSecurity
-//@EnableGlobalMethodSecurity(prePostEnabled = true)
 class SecurityConfig extends WebSecurityConfigurerAdapter {
 
     private static final String[] AUTH_WHITELIST = {"/user/login", "/user/register",
@@ -52,14 +51,6 @@ class SecurityConfig extends WebSecurityConfigurerAdapter {
     public AuthenticationManager authenticationManagerBean() throws Exception {
         return super.authenticationManagerBean();
     }
-
-//    @Override
-//    protected void configure(HttpSecurity http) throws Exception {
-//        http.csrf().disable().cors().disable().authorizeRequests().antMatchers(AUTH_WHITELIST).permitAll().anyRequest().authenticated()
-//                .and().exceptionHandling().and().sessionManagement()
-//                .sessionCreationPolicy(SessionCreationPolicy.STATELESS);
-//        http.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
-//    }
 
     @Override
     protected void configure(HttpSecurity http) throws Exception {

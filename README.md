@@ -1,1 +1,1 @@
-# Time-Spend-Track-App![TIME-SPEND-TRACK-APPLICATION](https://user-images.githubusercontent.com/105945883/171419744-d50b32c9-ee12-46c0-ab48-6fc1e18b9307.png)
+![Screenshot from 2022-06-01 22-30-30](https://user-images.githubusercontent.com/105945883/171460066-76c24efa-6125-48af-986c-82df126a9133.png)

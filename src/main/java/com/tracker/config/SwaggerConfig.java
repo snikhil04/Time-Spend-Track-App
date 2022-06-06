@@ -44,7 +44,7 @@ public class SwaggerConfig {
         return new Docket(DocumentationType.SWAGGER_2)
                 .groupName("FLEX83")
                 .select()
-                .apis(RequestHandlerSelectors.basePackage("com.tracker.controller"))
+                .apis(RequestHandlerSelectors.basePackage("com.tracker"))
                 .paths(PathSelectors.ant("/**"))
                 .build()
                 .apiInfo(apiInfo())
@@ -60,4 +60,5 @@ public class SwaggerConfig {
                 .version("v.0.1.0")
                 .build();
     }
+
 }

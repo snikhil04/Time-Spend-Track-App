@@ -1,22 +1,37 @@
 package com.tracker.controller;
 
 import java.security.Principal;
+import java.time.LocalDateTime;
 import java.util.List;
 
+import com.tracker.dao.ProductRepo;
+import com.tracker.dao.UserActivityRepo;
+import com.tracker.dao.UserWalletRequestsRepo;
+import com.tracker.entities.UserActivity;
+import com.tracker.entities.UserRequests;
+import com.tracker.exceptionhandler.ValidationException;
 import com.tracker.request.UserLogin;
 import com.tracker.request.UserRegisterRequestDto;
 import com.tracker.response.PurchaseHistoryUserResponse;
 import com.tracker.response.UpdatedUserResponse;
-import io.swagger.v3.oas.annotations.Operation;
+import com.tracker.securityconfig.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.*;
 
+import com.tracker.dao.UserRepo;
 import com.tracker.request.UserUpdatingDetailsRequestDto;
 import com.tracker.response.ProductListUserResponse;
 import com.tracker.dto.ProductPurchaseUserRequestDto;
 import com.tracker.entities.User;
 import com.tracker.service.UserService;
+
+import io.swagger.v3.oas.annotations.Operation;
 
 import javax.validation.Valid;
 
@@ -70,13 +85,6 @@ public class UserController {
     @Operation(summary = "Getting User Wallet Balance")
     public String UserWallet(Principal principal) {
         return this.userservice.UserWallet(principal);
-    }
-
-    // GETTING ALL PRODUCTS
-    @Operation(summary = "Getting All Products")
-    @GetMapping("/product/get")
-    public List<ProductListUserResponse> ProductsByCategory() {
-        return this.userservice.getAllProducts();
     }
 
     // GETTING PRODUCTS BASED ON PRODUCT CATEGORY

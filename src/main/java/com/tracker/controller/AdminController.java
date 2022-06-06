@@ -4,26 +4,18 @@ import java.util.List;
 
 import javax.validation.Valid;
 
-import com.tracker.dao.UserActivityRepo;
 import com.tracker.dao.UserRepo;
-import com.tracker.dao.UserWalletRequestsRepo;
 import com.tracker.entities.PurchaseHistory;
 import com.tracker.entities.UserRequests;
-import com.tracker.exceptionhandler.ValidationException;
 import com.tracker.response.MostSpendUsersResponse;
-import com.tracker.response.Response;
+import io.swagger.v3.oas.annotations.Operation;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import com.tracker.dto.UserWalletDtoJson;
 import com.tracker.request.AdminUpdatingUserRequestDto;
 import com.tracker.entities.User;
 import com.tracker.service.AdminService;
-
-import io.swagger.v3.oas.annotations.Operation;
 
 @RestController
 @RequestMapping("/admin")
@@ -80,7 +72,7 @@ public class AdminController {
 
     //UPDATING USER WALLET AS PER USER REQUEST
     @Operation(summary = "Updating User Wallet On User Request")
-    @PatchMapping("/request/wallet/update/{email}")
+    @PatchMapping("/wallet/request/update/{email}")
     public String updateUserWalletOnRequest(@PathVariable("email") String email, @RequestBody UserWalletDtoJson userwalletjson) {
         return this.adminService.UpdateUserWalletOnRequest(email, userwalletjson);
     }
@@ -99,7 +91,14 @@ public class AdminController {
         return this.adminService.DisableParticularUser(email);
     }
 
-    //FETCHING A PARTICULAR USER HISTORY
+    //FETCHING ALL PURCHASE HISTORY
+    @GetMapping("/purchasehistory")
+    @Operation(summary = "Getting All Purchase History")
+    public List<PurchaseHistory> AllPurchaseHistory() {
+        return this.adminService.AllPurchaseHistory();
+    }
+
+    //FETCHING A PARTICULAR USER PURCHASE HISTORY
     @GetMapping("/purchasehistory/{email}")
     @Operation(summary = "Getting A  Particular User Purchase History")
     public List<PurchaseHistory> UserPurchaseHistory(@PathVariable("email") String email) {

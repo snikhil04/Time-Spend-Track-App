@@ -3,6 +3,7 @@ package com.tracker.service;
 import java.security.Principal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 
@@ -170,6 +171,24 @@ public class UserService {
     public String UserWallet(Principal principal) {
         User user = this.userrepo.findByEmail(principal.getName());
         return "Your Wallet Balance is : " + user.getUserWallet().getCurrency();
+    }
+
+    // GETTING ALL PRODUCTS
+    public List<ProductListUserResponse> getAllProducts(){
+     List<Product> products= this.productRepo.findAll();
+
+     List<ProductListUserResponse> productList = new ArrayList<>();
+
+     for(Product p: products){
+         productList.add(new ProductListUserResponse(p.getId(),p.getName(),p.getPrice(),p.getDescription()));
+     }
+
+     if (productList.size()>0){
+         return productList;
+     }
+     else {
+         throw new ValidationException(404,"Products Not Available");
+     }
     }
 
     // GETTING PRODUCTS BASED ON PRODUCT CATEGORY

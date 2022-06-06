@@ -3,22 +3,14 @@ package com.tracker.controller;
 import java.util.List;
 import java.util.Optional;
 
-import com.tracker.dao.UserRepo;
-import com.tracker.entities.PurchaseHistory;
-import com.tracker.entities.User;
-import com.tracker.exceptionhandler.ValidationException;
-import com.tracker.response.AllUsersPurchaseHistoryResponse;
+import io.swagger.v3.oas.annotations.Operation;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import com.tracker.request.AddProductRequestDto;
 import com.tracker.entities.Product;
 import com.tracker.service.AdminService;
 
-import io.swagger.v3.oas.annotations.Operation;
 
 @RestController
 @RequestMapping("/admin/product")

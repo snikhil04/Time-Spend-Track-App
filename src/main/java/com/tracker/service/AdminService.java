@@ -265,12 +265,12 @@ public class AdminService {
         if (user != null) {
 
             //DELETING USER PURCHASE HISTORY IF EXISTS
-            if (!(purchaseHistoryList.isEmpty())){
+            if (!(purchaseHistoryList.isEmpty())) {
                 this.userpurchasehistorymongorepo.deleteAll(purchaseHistoryList);
             }
 
             //DELETING WALLLET REQUEST IF EXISTS
-            if (request!=null){
+            if (request != null) {
                 this.userWalletRequestsRepo.delete(request);
             }
             this.userrepo.delete(user);
@@ -337,6 +337,17 @@ public class AdminService {
         }
 
     }
+
+    //GETTING ALL USERS PURCHASE HISTORY
+    public List<PurchaseHistory> AllPurchaseHistory() {
+        List<PurchaseHistory> purchaseHistoryList = this.userpurchasehistorymongorepo.findAll();
+        if (purchaseHistoryList.size() > 0) {
+            return purchaseHistoryList;
+        } else {
+            throw new ValidationException(404, "Purchase History Not Found");
+        }
+    }
+
 
     //GETTING A PARTICULAR USER PURCHASE HISTORY
     public List<PurchaseHistory> UserPurchaseHistory(String email) {
